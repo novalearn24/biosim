@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cellular Osmosis Analysis Lab v12.1</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --text: #f8fafc;
+            --accent: #3b82f6;
+            --result-color: #22d3ee;
+            --rbc-color: radial-gradient(circle, #7f1d1d 15%, #ff5f5f 50%, #b91c1c 100%);
+            --plant-color: #166534;
+            --vacuole-color: radial-gradient(circle, #bae6fd 0%, #0ea5e9 100%);
+        }
+
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        
+        .lab-container { 
+            background: var(--panel); 
+            padding: 30px; border-radius: 20px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); 
+            max-width: 1050px; width: 95%; text-align: center; 
+            border: 1px solid rgba(255,255,255,0.1); box-sizing: border-box; 
+        }
+
+        .vocab { text-decoration: underline; text-decoration-style: dotted; cursor: help; position: relative; color: inherit; font-weight: 700; }
+        .vocab::after {
+            content: attr(data-tip);
+            position: absolute; left: 105%; top: 50%; transform: translateY(-50%);
+            background: #1e293b; color: #fff; padding: 12px; border-radius: 8px;
+            width: 260px; font-size: 0.85rem; line-height: 1.4; z-index: 100;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #3b82f6;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+            text-transform: none; font-weight: 400; text-align: left;
+        }
+        .vocab:hover::after { opacity: 1; }
+
+        .live-result { font-weight: 900; color: var(--result-color); font-size: 1.8rem; margin-bottom: 20px; text-transform: uppercase; min-height: 2.5rem; text-shadow: 0 0 15px rgba(34, 211, 238, 0.4); }
+
+        .experiment-area { display: flex; gap: 40px; justify-content: center; align-items: center; margin: 20px 0; }
+        .microscope-viewport { width: 380px; height: 380px; border: 15px solid #334155; border-radius: 50%; background: #000; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 60px rgba(0,0,0,1); }
+
+        .cell { transition: all 3s ease-in-out; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); position: relative; }
+        
+        .animal-cell { 
+            width: 120px; height: 120px; 
+            background: var(--rbc-color); border-radius: 50%; 
+            border: 2px solid #7f1d1d; box-shadow: inset 0 0 20px rgba(0,0,0,0.7);
+        }
+
+        /* Plant Cell Core */
+        .plant-cell { 
+            width: 130px; height: 160px; background: transparent; 
+            display: flex; align-items: center; justify-content: center; 
+            overflow: hidden; transition: all 1s ease-in-out;
+        }
+        
+        /* Lemon styling uses standard border */
+        .lemon-shape { border-radius: 12px; border: 6px solid #064e3b; }
+
+        /* Mangrove styling uses clip-path and background as the "Wall" */
+        .mangrove-shape { 
+            background-color: #064e3b; 
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        }
+
+        /* Cytoplasm nests inside to show the "outer layer" wall */
+        .cytoplasm { 
+            width: 100%; height: 100%; background: var(--plant-color); 
+            display: flex; align-items: center; justify-content: center; 
+            transition: all 3s ease-in-out; 
+        }
+        
+        .mangrove-shape .cytoplasm {
+            width: calc(100% - 12px);
+            height: calc(100% - 12px);
+            clip-path: inherit;
+        }
+
+        /* Vacuole core styling */
+        .vacuole { background: var(--vacuole-color); border-radius: 6px; transition: all 3s ease-in-out; width: 60%; height: 60%; }
+
+        /* [NEW] Specific Mangrove Vacuole Shape - to match main wall */
+        .mangrove-shape .vacuole {
+            clip-path: inherit;
+            border-radius: 0; /* Remove rounded corners so polygon handles shape */
+        }
+
+        /* Updated Turgid Size @ 85% */
+        .turgid .vacuole { width: 85%; height: 85%; }
+        .plasmolyzed .cytoplasm { width: 60%; height: 70%; border-radius: 20%; }
+        .plasmolyzed .vacuole { width: 15%; height: 15%; opacity: 0.4; }
+        
+        .shriveled { 
+            transform: scale(0.65); 
+            filter: url(#crenationFilter) drop-shadow(0 0 10px rgba(0,0,0,0.8));
+            background: radial-gradient(circle at 30% 30%, #ff5f5f, #7f1d1d 50%, #450a0a 100%);
+            box-shadow: inset 2px 2px 10px rgba(255,255,255,0.2);
+        }
+
+        .expand-phase { transform: scale(1.35); transition: transform 2s ease-out; }
+        .burst-ghost { transform: scale(1.4); opacity: 1; background: none !important; border: 6px dotted #b91c1c !important; box-shadow: none; filter: none; }
+
+        .controls { width: 280px; display: flex; flex-direction: column; gap: 20px; }
+        .group { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; text-align: left; border: 1px solid rgba(255,255,255,0.05); }
+        h3 { font-size: 0.7rem; text-transform: uppercase; color: #94a3b8; margin: 0 0 12px 0; letter-spacing: 0.1em; }
+        
+        .btn-lab { width: 100%; padding: 12px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; font-weight: 600; background: #334155; color: #cbd5e1; transition: 0.2s; }
+        .btn-lab.active { background: var(--accent); color: white; border-color: #60a5fa; }
+        .btn-lab:disabled { opacity: 0.2; cursor: not-allowed; }
+        
+        .reset-trigger { background: #10b981; color: white; padding: 18px; font-weight: 900; font-size: 1rem; display: none; border: none; border-radius: 12px; width: 100%; cursor: pointer; }
+
+        .log-container { width: 100%; margin: 40px auto 0; background: rgba(0,0,0,0.2); padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); box-sizing: border-box; }
+        table { width: 100%; border-collapse: collapse; margin: 15px auto 0; table-layout: fixed; }
+        th { border-bottom: 2px solid #475569; padding: 12px; text-align: center; color: #94a3b8; font-size: 0.75rem; text-transform: uppercase; }
+        td { padding: 12px; border-bottom: 1px solid #334155; color: #cbd5e1; text-align: center; vertical-align: middle;}
+
+        .mini-icon-container { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+        .mini-cell { width: 100px; height: 100px; zoom: 0.35; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+<svg style="display:none">
+  <filter id="crenationFilter">
+    <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" result="noise" />
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="12" xChannelSelector="R" yChannelSelector="G" />
+  </filter>
+</svg>
+
+<div class="lab-container">
+    <div class="live-result" id="liveStatus">System Ready</div>
+    
+    <div class="experiment-area">
+        <div class="controls">
+            <div class="group">
+                <h3>Place Cell Specimen:</h3>
+                <button class="btn-lab cell-btn" onclick="placeCell(this, 'Human RBC', 'animal')">Human Red Blood Cell</button>
+                <button class="btn-lab cell-btn" onclick="placeCell(this, 'Lemon Cell', 'lemon')">Lemon Cell</button>
+                <button class="btn-lab cell-btn" onclick="placeCell(this, 'Mangrove Leaf Cell', 'mangrove')">Mangrove Leaf Cell</button>
+            </div>
+            <div class="group">
+                <h3>Select Environment:</h3>
+                <button class="btn-lab water-btn" onclick="startTest(this, 'Distilled Water', 'hypotonic')" disabled>Distilled Water</button>
+                <button class="btn-lab water-btn" onclick="startTest(this, 'Normal Saline (0.9% salt)', 'isotonic')" disabled>Normal Saline (0.9% salt)</button>
+                <button class="btn-lab water-btn" onclick="startTest(this, 'Salty Marsh Water', 'hypertonic')" disabled>Salty Marsh Water</button>
+            </div>
+        </div>
+
+        <div class="microscope-viewport">
+            <div id="cellContainer"></div>
+        </div>
+
+        <div style="width: 280px;">
+            <button id="resetSlideBtn" class="reset-trigger" onclick="clearSlide()">PREPARE NEW SLIDE</button>
+        </div>
+    </div>
+
+    <div class="log-container">
+        <h3>Observation Data Log</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 15%;">Specimen</th>
+                    <th style="width: 15%;">Environment</th>
+                    <th style="width: 15%;">Initial</th>
+                    <th style="width: 15%;">Final</th>
+                    <th style="width: 40%;">Analysis</th>
+                </tr>
+            </thead>
+            <tbody id="logBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const glossary = {
+        "Osmosis": "The net movement of water molecules from a higher water potential to a lower water potential across a differentially permeable membrane.",
+        "Water Potential": "A measure of the 'tendency' of water to move. Pure water has the highest potential; salty or sugary solutions have a lower potential.",
+        "Net Movement": "The overall direction and outcome of moving particles (e.g., more water moving out than moving in).",
+        "Turgid": "A state where a plant cell is swollen and hard because its vacuole is full of water, pushing the cytoplasm against the cell wall.",
+        "Plasmolysis": "The process where a plant cell loses water, causing the cell membrane to detach and pull away from the cell wall.",
+        "Haemolysis": "The bursting of red blood cells when they take in too much water; bursting also occurs in animal cells because they lack a cell wall.",
+        "Crenation": "The shriveling of an animal cell (like a red blood cell) when it loses water in a salty environment; it shrinks and becomes wrinkled.",
+        "Cell Wall": "The rigid outer layer of a cell that provides structural support and prevents the cell from bursting.",
+        "Osmotic Adaptation": "A biological feature that allows an organism (like a mangrove) to maintain water balance in extreme environments.",
+        "Differentially Permeable Membrane": "A thin layer (like the cell membrane) that allows only certain substances, like water, to pass through while blocking others.",
+        "Isotonic Equilibrium": "A state where the water potential is the same on both sides of the membrane, resulting in no net movement of water."
+    };
+
+    let currentSpecimen = "";
+    let specimenType = "";
+    const container = document.getElementById('cellContainer');
+    const liveStatus = document.getElementById('liveStatus');
+    const resetBtn = document.getElementById('resetSlideBtn');
+    const logBody = document.getElementById('logBody');
+
+    function createVocabSpan(word) {
+        const key = Object.keys(glossary).find(k => word === k);
+        return key ? `<span class="vocab" data-tip="${glossary[key]}">${word}</span>` : word;
+    }
+
+    function placeCell(btn, name, type) {
+        clearSlide();
+        document.querySelectorAll('.cell-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentSpecimen = name;
+        specimenType = type;
+        const cell = createCellMarkup(type);
+        cell.id = "activeCell";
+        container.appendChild(cell);
+        liveStatus.innerText = "Specimen Loaded";
+        document.querySelectorAll('.water-btn').forEach(b => b.disabled = false);
+    }
+
+    function startTest(btn, waterName, tonicity) {
+        document.querySelectorAll('.water-btn').forEach(b => b.disabled = true);
+        btn.classList.add('active');
+        const cell = document.getElementById('activeCell');
+        liveStatus.innerText = "Analyzing Osmosis...";
+
+        let resHTML = "";
+        let finalClass = "";
+
+        if (specimenType === 'animal') {
+            if (tonicity === 'hypotonic') { handleRBCBurstSequence(cell); return; }
+            else if (tonicity === 'hypertonic') { finalClass = "shriveled"; resHTML = createVocabSpan("Crenation"); }
+            else { resHTML = createVocabSpan("Isotonic Equilibrium"); }
+        } 
+        else if (specimenType === 'mangrove') {
+            finalClass = "turgid";
+            resHTML = createVocabSpan("Turgid") + " via " + createVocabSpan("Osmotic Adaptation");
+        }
+        else {
+            if (tonicity === 'hypotonic') { finalClass = "turgid"; resHTML = createVocabSpan("Turgid"); }
+            else if (tonicity === 'isotonic') { resHTML = createVocabSpan("Isotonic Equilibrium"); }
+            else { finalClass = "plasmolyzed"; resHTML = createVocabSpan("Plasmolysis"); }
+        }
+
+        finalizeTest(cell, finalClass, resHTML, waterName);
+    }
+
+    function handleRBCBurstSequence(cell) {
+        cell.classList.add('expand-phase');
+        setTimeout(() => {
+            cell.classList.remove('expand-phase');
+            cell.classList.add('burst-ghost');
+            const h = createVocabSpan("Haemolysis");
+            liveStatus.innerHTML = h;
+            updateLog(currentSpecimen, 'Distilled Water', specimenType, 'burst-ghost', h);
+            resetBtn.style.display = "block";
+        }, 2000);
+    }
+
+    function finalizeTest(cell, finalClass, resHTML, waterName) {
+        // Reduced lag as requested earlier
+        setTimeout(() => {
+            if(finalClass) cell.classList.add(finalClass);
+            liveStatus.innerHTML = resHTML;
+            updateLog(currentSpecimen, waterName, specimenType, finalClass, resHTML);
+            resetBtn.style.display = "block";
+        }, 100);
+    }
+
+    function createCellMarkup(type, stateClass = "") {
+        const div = document.createElement('div');
+        let shapeClass = type === 'animal' ? 'animal-cell' : (type === 'lemon' ? 'plant-cell lemon-shape' : 'plant-cell mangrove-shape');
+        div.className = `cell ${shapeClass} ${stateClass}`;
+        if (type !== 'animal') div.innerHTML = '<div class="cytoplasm"><div class="vacuole"></div></div>';
+        return div;
+    }
+
+    function updateLog(specimen, water, type, finalClass, resHTML) {
+        const row = logBody.insertRow(0);
+        row.insertCell(0).innerText = specimen;
+        row.insertCell(1).innerText = water;
+        
+        const beforeCell = createCellMarkup(type);
+        beforeCell.classList.add('mini-cell');
+        row.insertCell(2).appendChild(beforeCell);
+        
+        const afterCell = createCellMarkup(type, finalClass);
+        afterCell.classList.add('mini-cell');
+        row.insertCell(3).appendChild(afterCell);
+        
+        row.insertCell(4).innerHTML = resHTML;
+    }
+
+    function clearSlide() {
+        container.innerHTML = '';
+        liveStatus.innerText = "System Ready";
+        resetBtn.style.display = "none";
+        document.querySelectorAll('.cell-btn, .water-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.water-btn').forEach(b => b.disabled = true);
+    }
+</script>
+
+</body>
+</html>
