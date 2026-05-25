@@ -23,24 +23,53 @@
             padding: 30px; border-radius: 20px; 
             box-shadow: 0 20px 50px rgba(0,0,0,0.5); 
             max-width: 1050px; width: 95%; text-align: center; 
-            border: 1px solid rgba(255,255,255,0.1); box-sizing: border-box; 
+            border: 1px solid rgba(255,255,255,0.1); box-sizing: border-box;
         }
 
-        .vocab { text-decoration: underline; text-decoration-style: dotted; cursor: help; position: relative; color: inherit; font-weight: 700; }
-        .vocab::after {
-            content: attr(data-tip);
-            position: absolute; left: 105%; top: 50%; transform: translateY(-50%);
-            background: #1e293b; color: #fff; padding: 12px; border-radius: 8px;
-            width: 260px; font-size: 0.85rem; line-height: 1.4; z-index: 100;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #3b82f6;
-            opacity: 0; pointer-events: none; transition: opacity 0.2s;
-            text-transform: none; font-weight: 400; text-align: left;
+        /* VOCAB STYLING */
+        .vocab { 
+            text-decoration: underline; 
+            text-decoration-style: dotted; 
+            cursor: help; 
+            color: var(--accent); 
+            font-weight: 700; 
         }
-        .vocab:hover::after { opacity: 1; }
+        
+        /* THE INFORMATION BAR - PLACED ABOVE THE LOG */
+        #vocab-hud {
+            width: 100%;
+            margin: 30px auto 10px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            min-height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            color: #94a3b8;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        #vocab-hud.active {
+            border-color: var(--accent);
+            color: #fff;
+            background: rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+        }
 
         .live-result { font-weight: 900; color: var(--result-color); font-size: 1.8rem; margin-bottom: 20px; text-transform: uppercase; min-height: 2.5rem; text-shadow: 0 0 15px rgba(34, 211, 238, 0.4); }
 
         .experiment-area { display: flex; gap: 40px; justify-content: center; align-items: center; margin: 20px 0; }
+        
+        @media (max-width: 900px) {
+            .experiment-area { flex-direction: column; }
+            .controls { width: 100% !important; }
+            .microscope-viewport { width: 300px; height: 300px; }
+        }
+
         .microscope-viewport { width: 380px; height: 380px; border: 15px solid #334155; border-radius: 50%; background: #000; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 60px rgba(0,0,0,1); }
 
         .cell { transition: all 3s ease-in-out; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); position: relative; }
@@ -51,23 +80,19 @@
             border: 2px solid #7f1d1d; box-shadow: inset 0 0 20px rgba(0,0,0,0.7);
         }
 
-        /* Plant Cell Core */
         .plant-cell { 
             width: 130px; height: 160px; background: transparent; 
             display: flex; align-items: center; justify-content: center; 
             overflow: hidden; transition: all 1s ease-in-out;
         }
         
-        /* Lemon styling uses standard border */
         .lemon-shape { border-radius: 12px; border: 6px solid #064e3b; }
 
-        /* Mangrove styling uses clip-path and background as the "Wall" */
         .mangrove-shape { 
             background-color: #064e3b; 
             clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
         }
 
-        /* Cytoplasm nests inside to show the "outer layer" wall */
         .cytoplasm { 
             width: 100%; height: 100%; background: var(--plant-color); 
             display: flex; align-items: center; justify-content: center; 
@@ -75,21 +100,12 @@
         }
         
         .mangrove-shape .cytoplasm {
-            width: calc(100% - 12px);
-            height: calc(100% - 12px);
-            clip-path: inherit;
+            width: calc(100% - 12px); height: calc(100% - 12px); clip-path: inherit;
         }
 
-        /* Vacuole core styling */
         .vacuole { background: var(--vacuole-color); border-radius: 6px; transition: all 3s ease-in-out; width: 60%; height: 60%; }
+        .mangrove-shape .vacuole { clip-path: inherit; border-radius: 0; }
 
-        /* [NEW] Specific Mangrove Vacuole Shape - to match main wall */
-        .mangrove-shape .vacuole {
-            clip-path: inherit;
-            border-radius: 0; /* Remove rounded corners so polygon handles shape */
-        }
-
-        /* Updated Turgid Size @ 85% */
         .turgid .vacuole { width: 85%; height: 85%; }
         .plasmolyzed .cytoplasm { width: 60%; height: 70%; border-radius: 20%; }
         .plasmolyzed .vacuole { width: 15%; height: 15%; opacity: 0.4; }
@@ -114,16 +130,15 @@
         
         .reset-trigger { background: #10b981; color: white; padding: 18px; font-weight: 900; font-size: 1rem; display: none; border: none; border-radius: 12px; width: 100%; cursor: pointer; }
 
-        .log-container { width: 100%; margin: 40px auto 0; background: rgba(0,0,0,0.2); padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); box-sizing: border-box; }
-        table { width: 100%; border-collapse: collapse; margin: 15px auto 0; table-layout: fixed; }
+        .log-container { width: 100%; background: rgba(0,0,0,0.2); padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); box-sizing: border-box; overflow-x: auto;}
+        table { width: 100%; border-collapse: collapse; margin: 15px auto 0; min-width: 600px;}
         th { border-bottom: 2px solid #475569; padding: 12px; text-align: center; color: #94a3b8; font-size: 0.75rem; text-transform: uppercase; }
         td { padding: 12px; border-bottom: 1px solid #334155; color: #cbd5e1; text-align: center; vertical-align: middle;}
 
-        .mini-icon-container { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
         .mini-cell { width: 100px; height: 100px; zoom: 0.35; pointer-events: none; }
     </style>
 </head>
-<body>
+<body onclick="void(0)">
 
 <svg style="display:none">
   <filter id="crenationFilter">
@@ -160,6 +175,8 @@
         </div>
     </div>
 
+    <div id="vocab-hud">Hover or tap any underlined word for its definition</div>
+
     <div class="log-container">
         <h3>Observation Data Log</h3>
         <table>
@@ -192,17 +209,33 @@
         "Isotonic Equilibrium": "A state where the water potential is the same on both sides of the membrane, resulting in no net movement of water."
     };
 
+    const hud = document.getElementById('vocab-hud');
+
+    function showDefinition(word) {
+        hud.innerText = glossary[word] || "";
+        hud.classList.add('active');
+    }
+
+    function hideDefinition() {
+        hud.innerText = "Hover or tap any underlined word for its definition";
+        hud.classList.remove('active');
+    }
+
+    function createVocabSpan(word) {
+        const key = Object.keys(glossary).find(k => word === k);
+        return key ? `<span class="vocab" 
+                        onmouseenter="showDefinition('${key}')" 
+                        onmouseleave="hideDefinition()"
+                        ontouchstart="showDefinition('${key}')"
+                        >${word}</span>` : word;
+    }
+
     let currentSpecimen = "";
     let specimenType = "";
     const container = document.getElementById('cellContainer');
     const liveStatus = document.getElementById('liveStatus');
     const resetBtn = document.getElementById('resetSlideBtn');
     const logBody = document.getElementById('logBody');
-
-    function createVocabSpan(word) {
-        const key = Object.keys(glossary).find(k => word === k);
-        return key ? `<span class="vocab" data-tip="${glossary[key]}">${word}</span>` : word;
-    }
 
     function placeCell(btn, name, type) {
         clearSlide();
@@ -257,7 +290,6 @@
     }
 
     function finalizeTest(cell, finalClass, resHTML, waterName) {
-        // Reduced lag as requested earlier
         setTimeout(() => {
             if(finalClass) cell.classList.add(finalClass);
             liveStatus.innerHTML = resHTML;
@@ -296,6 +328,7 @@
         resetBtn.style.display = "none";
         document.querySelectorAll('.cell-btn, .water-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.water-btn').forEach(b => b.disabled = true);
+        hideDefinition();
     }
 </script>
 
